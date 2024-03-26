@@ -13,7 +13,7 @@ from datetime import datetime,timedelta
 import pytz
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from math import radians, sin, cos, sqrt, atan2
+import os
 
 LOCATION_TABLE_URL = os.environ.get("LOCATION_TABLE_URL")
 SPATIAL_TABLE_URL = os.environ.get("SPATIAL_TABLE_URL")
