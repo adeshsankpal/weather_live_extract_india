@@ -7,9 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/193Q9d4yOWNQirTLu_3H0mXGenVG8_U_E
 """
 
-!pip install imdlib
-!pip install mongo
-
 import imdlib as imd
 import pandas as pd
 from datetime import datetime,timedelta
