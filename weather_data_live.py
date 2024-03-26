@@ -15,6 +15,10 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from math import radians, sin, cos, sqrt, atan2
 
+LOCATION_TABLE_URL = os.environ.get("LOCATION_TABLE_URL")
+SPATIAL_TABLE_URL = os.environ.get("SPATIAL_TABLE_URL")
+WEATHER_TABLE_URL = os.environ.get("WEATHER_TABLE_URL")
+
 def connect_db(url,db,collection):
   uri = url
   # Create a new client and connect to the server
@@ -79,21 +83,21 @@ def full_temp_data(loc_nearby,df_tm,var):
   min_distance_indices.reset_index(drop=True, inplace=True)
   return min_distance_indices
 
-url3="mongodb+srv://parameter:parameter@cluster0.va2sth1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+url3=LOCATION_TABLE_URL
 location_table='nearby_location'
 db_india='india'
 location_table=connect_db(url3,db_india,location_table)
 loc_nearby=pd.DataFrame(list(location_table.find()))
 
 def spatial_data():
-  url2="mongodb+srv://parameter:parameter@cluster0.va2sth1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+  url2=SPATIAL_TABLE_URL
   spatial='spatial'
   db_india='india'
   spatial_table=connect_db(url2,db_india,spatial)
   data_spatial=pd.DataFrame(list(spatial_table.find()))
   return data_spatial
 
-url="mongodb+srv://weather1:weather1@cluster0.d5tkbqr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+url=WEATHER_TABLE_URL
 table_name='weather_2021'
 db='W_India_2021'
 table=connect_db(url,db,table_name)
