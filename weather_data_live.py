@@ -83,65 +83,73 @@ def full_temp_data(loc_nearby,df_tm,var):
   min_distance_indices.reset_index(drop=True, inplace=True)
   return min_distance_indices
 
-url3=LOCATION_TABLE_URL
-location_table='nearby_location'
-db_india='india'
-location_table=connect_db(url3,db_india,location_table)
-loc_nearby=pd.DataFrame(list(location_table.find()))
-
-def spatial_data():
-  url2=SPATIAL_TABLE_URL
+def spatial_data(url2):
   spatial='spatial'
   db_india='india'
   spatial_table=connect_db(url2,db_india,spatial)
   data_spatial=pd.DataFrame(list(spatial_table.find()))
   return data_spatial
 
-url=WEATHER_TABLE_URL
-table_name='weather_2021'
-db='W_India_2021'
-table=connect_db(url,db,table_name)
+def main_query(WEATHER_TABLE_URL1,SPATIAL_TABLE_URL1,LOCATION_TABLE_URL1,delta):
+  url3=LOCATION_TABLE_URL1
+  location_table='nearby_location'
+  db_india='india'
+  location_table=connect_db(url3,db_india,location_table)
+  loc_nearby=pd.DataFrame(list(location_table.find()))
 
-m_date = table.find_one(sort=[('time', -1)])
-m_date=m_date['time']
-m_date = m_date.replace(tzinfo=None)
-m_date = m_date + timedelta(days=1)
-time_now=now()
-date_5_days_ago = time_now - timedelta(days=5)
-date_to_delete=date_5_days_ago
-time_now = time_now + timedelta(days=-1)
-date_5_days_ago = date_5_days_ago + timedelta(days=1)
-date_5_days_ago = date_5_days_ago.replace(tzinfo=None)
-start_day=date_5_days_ago.strftime('%Y-%m-%d')
-end_day=time_now.strftime('%Y-%m-%d')
-if m_date<=date_5_days_ago:
-  start_day=m_date.strftime('%Y-%m-%d')
+  url=WEATHER_TABLE_URL1
+  table_name='weather_2021'
+  db='W_India_2021'
+  table=connect_db(url,db,table_name)
 
-data=download_daily(start_day,end_day,'rain')
-data=convert_to_df(data,'rain')
-data_tmax=download_daily(start_day,end_day,'tmax')
-data_tmax=convert_to_df(data_tmax,'tmax')
-data_tmax = data_tmax.rename(columns={'lat': 'lat_nearby', 'lon': 'lon_nearby'})
-data_tmax=full_temp_data(loc_nearby,data_tmax,'tmax')
-data_tmin=download_daily(start_day,end_day,'tmin')
-data_tmin=convert_to_df(data_tmin,'tmin')
-data_tmin = data_tmin.rename(columns={'lat': 'lat_nearby', 'lon': 'lon_nearby'})
-data_tmin=full_temp_data(loc_nearby,data_tmin,'tmin')
-data=pd.merge(data,data_tmax,on=['time','lon','lat'],how='left')
-data=pd.merge(data,data_tmin,on=['time','lon','lat'],how='left')
-data_spatial=spatial_data()
-# Concatenate the columns 'state_district', 'state', and 'country' into a single column with "|" separator
-data_spatial['location'] = data_spatial.apply(lambda row: f"{row['state_district']}|{row['state']}|{row['country']}", axis=1)
-# Drop the original columns
-data_spatial.drop(columns=['state_district', 'state', 'country'], inplace=True)
-data=pd.merge(data,data_spatial,on=['lat','lon'],how='left')
-data=data[['time','location','rain','tmax','tmin']]
-data = data.groupby(['time', 'location']).agg({'rain': 'mean', 'tmax': 'mean', 'tmin': 'mean'}).reset_index()
-data=data.to_dict(orient='records')
-# Round Numeric Values
-for record in data:
-    record['rain'] = round(record['rain'], 1)
-    record['tmax'] = round(record['tmax'], 1)
-    record['tmin'] = round(record['tmin'], 1)
-delete_result = table.delete_many({"time": {"$gte": date_to_delete}})
-x=table.insert_many(data)
+  m_date = table.find_one(sort=[('time', -1)])
+  m_date=m_date['time']
+  m_date = m_date.replace(tzinfo=None)
+  m_date = m_date + timedelta(days=1)
+  time_now=now()
+  date_5_days_ago = time_now - timedelta(days=5)
+  date_to_delete=date_5_days_ago
+  time_now = time_now + timedelta(days=delta)
+  date_5_days_ago = date_5_days_ago + timedelta(days=1)
+  date_5_days_ago = date_5_days_ago.replace(tzinfo=None)
+  start_day=date_5_days_ago.strftime('%Y-%m-%d')
+  end_day=time_now.strftime('%Y-%m-%d')
+  if m_date<=date_5_days_ago:
+    start_day=m_date.strftime('%Y-%m-%d')
+
+  data=download_daily(start_day,end_day,'rain')
+  data=convert_to_df(data,'rain')
+  data_tmax=download_daily(start_day,end_day,'tmax')
+  data_tmax=convert_to_df(data_tmax,'tmax')
+  data_tmax = data_tmax.rename(columns={'lat': 'lat_nearby', 'lon': 'lon_nearby'})
+  data_tmax=full_temp_data(loc_nearby,data_tmax,'tmax')
+  data_tmin=download_daily(start_day,end_day,'tmin')
+  data_tmin=convert_to_df(data_tmin,'tmin')
+  data_tmin = data_tmin.rename(columns={'lat': 'lat_nearby', 'lon': 'lon_nearby'})
+  data_tmin=full_temp_data(loc_nearby,data_tmin,'tmin')
+  data=pd.merge(data,data_tmax,on=['time','lon','lat'],how='left')
+  data=pd.merge(data,data_tmin,on=['time','lon','lat'],how='left')
+  data_spatial=spatial_data(SPATIAL_TABLE_URL1)
+  # Concatenate the columns 'state_district', 'state', and 'country' into a single column with "|" separator
+  data_spatial['location'] = data_spatial.apply(lambda row: f"{row['state_district']}|{row['state']}|{row['country']}", axis=1)
+  # Drop the original columns
+  data_spatial.drop(columns=['state_district', 'state', 'country'], inplace=True)
+  data=pd.merge(data,data_spatial,on=['lat','lon'],how='left')
+  data=data[['time','location','rain','tmax','tmin']]
+  data = data.groupby(['time', 'location']).agg({'rain': 'mean', 'tmax': 'mean', 'tmin': 'mean'}).reset_index()
+  data=data.to_dict(orient='records')
+  # Round Numeric Values
+  for record in data:
+      record['rain'] = round(record['rain'], 1)
+      record['tmax'] = round(record['tmax'], 1)
+      record['tmin'] = round(record['tmin'], 1)
+  delete_result = table.delete_many({"time": {"$gte": date_to_delete}})
+  x=table.insert_many(data)
+
+try:
+  main_query(WEATHER_TABLE_URL,SPATIAL_TABLE_URL,LOCATION_TABLE_URL,0)
+except:
+  try:
+    main_query(WEATHER_TABLE_URL,SPATIAL_TABLE_URL,LOCATION_TABLE_URL,-1)
+  except:
+    main_query(WEATHER_TABLE_URL,SPATIAL_TABLE_URL,LOCATION_TABLE_URL,-2)
